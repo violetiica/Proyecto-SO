@@ -5,7 +5,12 @@
 #include <chrono>
 #include "picosha2.h"
 #include <cstdio> // Para remove()
+#include <ctime>
 using namespace std;
+
+
+long long tiempoTotalBase = 0; // Variable global para almacenar el tiempo total
+long long tiempoTotalOptimizado = 0; // Variable global para almacenar el tiempo total optimizado
 
 string encrypt(string contenido)
 {
@@ -74,6 +79,8 @@ void manejarArchivo(int n)
 {
     string contenido;
     auto inicioTotal = chrono::high_resolution_clock::now();
+    time_t tiempoInicio = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    cout << "TI: " << std::ctime(&tiempoInicio)<<endl;
     for (int i = 1; i <= n; i++) {
         auto start = chrono::high_resolution_clock::now();
         string nombreArchivo = to_string(i) + ".txt";
@@ -88,7 +95,7 @@ void manejarArchivo(int n)
             if (outFile.is_open()) {
                 outFile << textoEncriptado;
                 outFile.close();
-                cout << "Archivo " << nombreArchivo << ".txt encriptado correctamente.\n" << endl;
+                //cout << "Archivo " << nombreArchivo << ".txt encriptado correctamente.\n" << endl;
                 // Calcular y guardar el hash del archivo encriptado
                 string hash = picosha2::hash256_hex_string(textoEncriptado);
                 ofstream hashFile(nombreHash);
@@ -109,6 +116,7 @@ void manejarArchivo(int n)
             if (inFile.is_open()) {
                 getline(inFile, contenido, '\0'); 
                 inFile.close();
+
                 // Verificar si el hash guardado coincide con el actual
                 string hashGuardado,hashActual;
                 ifstream hashFile(nombreHash);
@@ -117,30 +125,27 @@ void manejarArchivo(int n)
                     hashFile.close();
                     hashActual= picosha2::hash256_hex_string(contenido);
                     // Comparar el hash guardado con el actual
-                    if (hashGuardado == hashActual) {
-                        cout << "El hash del archivo " << nombreArchivo << " coincide con el guardado.\n" << endl;
-                    } else {
+                    if (hashGuardado != hashActual) {
                         cout << "El hash del archivo " << nombreArchivo << " no coincide con el guardado.\n" << endl;
-                        continue; // Salir del bucle si los hashes no coinciden
+                        continue;
                     }
                 } else {
                     cout << "No se pudo abrir el archivo hash para: " << nombreArchivo << endl;
                     continue; // Salir del bucle si no se puede abrir el archivo hash
                 }
                 //aca termina la verificación del hash
+
                 string textoDesencriptado=decrypt(contenido);
                 ofstream outFile(nombreArchivo);
                 if (outFile.is_open()) {
                     outFile << textoDesencriptado;
                     outFile.close();
-                    cout << "Archivo " << nombreArchivo << ".txt desencriptado correctamente.\n" << endl;
+                    //cout << "Archivo " << nombreArchivo << ".txt desencriptado correctamente.\n" << endl;
                     
                     ifstream inFile("original.txt");
                     getline(inFile, contenido, '\0');
                     inFile.close();
-                    if (contenido == textoDesencriptado) {
-                        cout << "El archivo " << nombreArchivo << " coincide con el original.\n" << endl;
-                    } else {
+                    if (contenido != textoDesencriptado) {
                         cout << "El archivo " << nombreArchivo << " no coincide con el original.\n" << endl;
                     }
                 } else {
@@ -153,13 +158,16 @@ void manejarArchivo(int n)
         }
         auto end = chrono::high_resolution_clock::now();
         auto duration =chrono::duration_cast<chrono::milliseconds>(end - start);
-        cout << "Tiempo "<<i<<":" << duration.count() << " ms \n" << endl;
+        cout << "Tiempo "<<i<<": " << duration.count() << " ms " << endl;
     }
     auto finTotal = chrono::high_resolution_clock::now();
     auto duracionTotal = chrono::duration_cast<chrono::milliseconds>(finTotal - inicioTotal);
-    long long duracionPromedio =duracionTotal.count()/n; // Calcular el tiempo promedio
-    cout << "TFIN: " << duracionTotal.count() << " ms" << endl;
+    long long duracionPromedio = duracionTotal.count()/n; // Calcular el tiempo promedio
+    cout << "\nTFIN: " << duracionTotal.count() << " ms" << endl;
     cout << "TPPA: " << duracionPromedio << " ms" << endl;
+    time_t tiempoFinal = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    cout << "TT: " << std::ctime(&tiempoFinal);
+    tiempoTotalBase = duracionTotal.count(); // Calcular el tiempo total
 }
 
 void eliminarArchivos(int n) {  //solo si es necesario eliminar archivos en pruebas
@@ -187,12 +195,12 @@ int main()
     if (n<=50 and n>0) {
     duplicate(n); // Ejemplo: crea 1.txt, 2.txt, 3.txt
     cout << "--------------------------------------------------------------------" << endl;
-    cout << "PROCESO BASE" << endl;
+    cout << "PROCESO BASE \n" << endl;
     manejarArchivo(n);
     cout << "--------------------------------------------------------------------" << endl;
     } else {
         cout << "El numero de archivos debe ser positivo, distinto de 0 menor o igual a 50" << endl;
     }
-    //eliminarArchivos(9); // Elimina los archivos creados
+    //eliminarArchivos(50); // Elimina los archivos creados
 
 }
