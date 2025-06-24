@@ -20,11 +20,11 @@ string encrypt(string contenido)
             encryptedContent += '9' - (c - '0');
         }
         else if (isupper(c)) {
-            // Mayúsculas: circular de 'A' a 'Z'
+            // May?sculas: circular de 'A' a 'Z'
             encryptedContent += ((c - 'A' + 3) % 26) + 'A';
         }
         else if (islower(c)) {
-            // Minúsculas: circular de 'a' a 'z'
+            // Min?sculas: circular de 'a' a 'z'
             encryptedContent += ((c - 'a' + 3) % 26) + 'a';
         }
         else {
@@ -41,11 +41,11 @@ string decrypt(string contenido)
             encryptedContent += '9' - (c - '0');
         }
         else if (isupper(c)) {
-            // Mayúsculas: circular de 'A' a 'Z'
+            // May?sculas: circular de 'A' a 'Z'
             encryptedContent += ((c - 'A' - 3 + 26) % 26) + 'A';
         }
         else if (islower(c)) {
-            // Minúsculas: circular de 'a' a 'z'
+            // Min?sculas: circular de 'a' a 'z'
             encryptedContent += ((c - 'a' - 3 + 26) % 26) + 'a';
         }
         else {
@@ -133,7 +133,7 @@ void manejarArchivo(int n)
                     cout << "No se pudo abrir el archivo hash para: " << nombreArchivo << endl;
                     continue; // Salir del bucle si no se puede abrir el archivo hash
                 }
-                //aca termina la verificación del hash
+                //aca termina la verificaci?n del hash
 
                 string textoDesencriptado=decrypt(contenido);
                 ofstream outFile(nombreArchivo);
@@ -201,6 +201,9 @@ int main()
     } else {
         cout << "El numero de archivos debe ser positivo, distinto de 0 menor o igual a 50" << endl;
     }
-    //eliminarArchivos(50); // Elimina los archivos creados
-
+    //eliminarArchivos(50); //Eliminar todos los archivos
+    cout << "Presione ENTER para salir..." << endl;
+    cin.ignore();
+    cin.get();
+    return 0;
 }
