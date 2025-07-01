@@ -1,55 +1,53 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <cctype> 
-#include <chrono>
+#include <cctype>
 #include "picosha2.h"
 #include <cstdio> // Para remove()
 #include <ctime>
+#include <sstream>
 using namespace std;
 
-
-long long tiempoTotalBase = 0; // Variable global para almacenar el tiempo total
-long long tiempoTotalOptimizado = 0; // Variable global para almacenar el tiempo total optimizado
+long long tiempoTotalBase = 0;
+long long tiempoTotalOptimizado = 0;
 
 string encrypt(string contenido)
 {
     string encryptedContent = "";
-    for (char c : contenido) {
+    for (size_t i = 0; i < contenido.size(); ++i) {
+        char c = contenido[i];
         if (isdigit(c)) {
             encryptedContent += '9' - (c - '0');
         }
         else if (isupper(c)) {
-            // May?sculas: circular de 'A' a 'Z'
             encryptedContent += ((c - 'A' + 3) % 26) + 'A';
         }
         else if (islower(c)) {
-            // Min?sculas: circular de 'a' a 'z'
             encryptedContent += ((c - 'a' + 3) % 26) + 'a';
         }
         else {
-            encryptedContent += c; // Otros caracteres sin cambio
+            encryptedContent += c;
         }
     }
     return encryptedContent;
 }
+
 string decrypt(string contenido)
 {
     string encryptedContent = "";
-    for (char c : contenido) {
+    for (size_t i = 0; i < contenido.size(); ++i) {
+        char c = contenido[i];
         if (isdigit(c)) {
             encryptedContent += '9' - (c - '0');
         }
         else if (isupper(c)) {
-            // May?sculas: circular de 'A' a 'Z'
             encryptedContent += ((c - 'A' - 3 + 26) % 26) + 'A';
         }
         else if (islower(c)) {
-            // Min?sculas: circular de 'a' a 'z'
             encryptedContent += ((c - 'a' - 3 + 26) % 26) + 'a';
         }
         else {
-            encryptedContent += c; // Otros caracteres sin cambio
+            encryptedContent += c;
         }
     }
     return encryptedContent;
@@ -59,14 +57,17 @@ void duplicate(int n)
 {
     string sourceFile = "original.txt";
     for (int i = 1; i <= n; ++i) {
-        ifstream src(sourceFile, ios::binary);
-        ofstream dst(to_string(i) + ".txt", ios::binary);
+        ifstream src(sourceFile.c_str(), ios::binary);
+        stringstream ss;
+        ss << i;
+        string nombreArchivo = ss.str() + ".txt";
+        ofstream dst(nombreArchivo.c_str(), ios::binary);
         if (!src) {
             cout << "No se pudo abrir el archivo fuente: " << sourceFile << endl;
             return;
         }
         if (!dst) {
-            cout << "No se pudo crear el archivo destino: " << i << ".txt" << endl;
+            cout << "No se pudo crear el archivo destino: " << nombreArchivo << endl;
             return;
         }
         dst << src.rdbuf();
@@ -78,102 +79,95 @@ void duplicate(int n)
 void manejarArchivo(int n)
 {
     string contenido;
-    auto inicioTotal = chrono::high_resolution_clock::now();
-    time_t tiempoInicio = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    cout << "TI: " << std::ctime(&tiempoInicio)<<endl;
+    clock_t inicioTotal = clock();
+    time_t tiempoInicio = time(0);
+    cout << "TI: " << ctime(&tiempoInicio) << endl;
     for (int i = 1; i <= n; i++) {
-        auto start = chrono::high_resolution_clock::now();
-        string nombreArchivo = to_string(i) + ".txt";
-        string nombreHash = to_string(i) + ".sha";
-        //aca empieza el encriptar
-        ifstream inFile(nombreArchivo);
+        clock_t start = clock();
+        stringstream ss;
+        ss << i;
+        string nombreArchivo = ss.str() + ".txt";
+        string nombreHash = ss.str() + ".sha";
+        // Encriptar
+        ifstream inFile(nombreArchivo.c_str());
         if (inFile.is_open()) {
-            getline(inFile, contenido, '\0'); 
+            getline(inFile, contenido, '\0');
             inFile.close();
-            string textoEncriptado=encrypt(contenido);
-            ofstream outFile(nombreArchivo);
+            string textoEncriptado = encrypt(contenido);
+            ofstream outFile(nombreArchivo.c_str());
             if (outFile.is_open()) {
                 outFile << textoEncriptado;
                 outFile.close();
-                //cout << "Archivo " << nombreArchivo << ".txt encriptado correctamente.\n" << endl;
                 // Calcular y guardar el hash del archivo encriptado
                 string hash = picosha2::hash256_hex_string(textoEncriptado);
-                ofstream hashFile(nombreHash);
+                ofstream hashFile(nombreHash.c_str());
                 if (hashFile.is_open()) {
                     hashFile << hash;
                     hashFile.close();
                 } else {
                     cout << "No se pudo escribir el archivo hash para: " << nombreArchivo << endl;
                 }
-                //aca termina la generacion del hash
             } else {
-                cout << "No se pudo escribir el archivo para encriptar: " << nombreArchivo << ".txt" << endl;
+                cout << "No se pudo escribir el archivo para encriptar: " << nombreArchivo << endl;
             }
-        //aca termina el encriptar
-
-        //aca empieza el desencriptar
-            ifstream inFile(nombreArchivo);
-            if (inFile.is_open()) {
-                getline(inFile, contenido, '\0'); 
-                inFile.close();
-
-                // Verificar si el hash guardado coincide con el actual
-                string hashGuardado,hashActual;
-                ifstream hashFile(nombreHash);
+            // Desencriptar
+            ifstream inFile2(nombreArchivo.c_str());
+            if (inFile2.is_open()) {
+                getline(inFile2, contenido, '\0');
+                inFile2.close();
+                // Verificar hash
+                string hashGuardado, hashActual;
+                ifstream hashFile(nombreHash.c_str());
                 if (hashFile.is_open()) {
-                    getline(hashFile, hashGuardado,'\0');
+                    getline(hashFile, hashGuardado, '\0');
                     hashFile.close();
-                    hashActual= picosha2::hash256_hex_string(contenido);
-                    // Comparar el hash guardado con el actual
+                    hashActual = picosha2::hash256_hex_string(contenido);
                     if (hashGuardado != hashActual) {
                         cout << "El hash del archivo " << nombreArchivo << " no coincide con el guardado.\n" << endl;
                         continue;
                     }
                 } else {
                     cout << "No se pudo abrir el archivo hash para: " << nombreArchivo << endl;
-                    continue; // Salir del bucle si no se puede abrir el archivo hash
+                    continue;
                 }
-                //aca termina la verificaci?n del hash
-
-                string textoDesencriptado=decrypt(contenido);
-                ofstream outFile(nombreArchivo);
-                if (outFile.is_open()) {
-                    outFile << textoDesencriptado;
-                    outFile.close();
-                    //cout << "Archivo " << nombreArchivo << ".txt desencriptado correctamente.\n" << endl;
-                    
-                    ifstream inFile("original.txt");
-                    getline(inFile, contenido, '\0');
-                    inFile.close();
+                string textoDesencriptado = decrypt(contenido);
+                ofstream outFile2(nombreArchivo.c_str());
+                if (outFile2.is_open()) {
+                    outFile2 << textoDesencriptado;
+                    outFile2.close();
+                    ifstream inFile3("original.txt");
+                    getline(inFile3, contenido, '\0');
+                    inFile3.close();
                     if (contenido != textoDesencriptado) {
                         cout << "El archivo " << nombreArchivo << " no coincide con el original.\n" << endl;
                     }
                 } else {
                     cout << "No se pudo escribir el archivo para escribir: " << nombreArchivo << " para desencriptar \n" << endl;
                 }
-            } //
-        //aca termina el desencriptar
+            }
         } else {
-            cout << "No se pudo abrir el archivo "+nombreArchivo+" para encriptar" << endl;
+            cout << "No se pudo abrir el archivo " << nombreArchivo << " para encriptar" << endl;
         }
-        auto end = chrono::high_resolution_clock::now();
-        auto duration =chrono::duration_cast<chrono::milliseconds>(end - start);
-        cout << "Tiempo "<<i<<": " << duration.count() << " ms " << endl;
+        clock_t end = clock();
+        double duration = double(end - start) * 1000.0 / CLOCKS_PER_SEC;
+        cout << "Tiempo " << i << ": " << duration << " ms " << endl;
     }
-    auto finTotal = chrono::high_resolution_clock::now();
-    auto duracionTotal = chrono::duration_cast<chrono::milliseconds>(finTotal - inicioTotal);
-    long long duracionPromedio = duracionTotal.count()/n; // Calcular el tiempo promedio
-    cout << "\nTFIN: " << duracionTotal.count() << " ms" << endl;
+    clock_t finTotal = clock();
+    double duracionTotal = double(finTotal - inicioTotal) * 1000.0 / CLOCKS_PER_SEC;
+    double duracionPromedio = duracionTotal / n;
+    cout << "\nTFIN: " << duracionTotal << " ms" << endl;
     cout << "TPPA: " << duracionPromedio << " ms" << endl;
-    time_t tiempoFinal = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    cout << "TT: " << std::ctime(&tiempoFinal);
-    tiempoTotalBase = duracionTotal.count(); // Calcular el tiempo total
+    time_t tiempoFinal = time(0);
+    cout << "TT: " << ctime(&tiempoFinal);
+    tiempoTotalBase = (long long)duracionTotal;
 }
 
-void eliminarArchivos(int n) {  //solo si es necesario eliminar archivos en pruebas
+void eliminarArchivos(int n) {
     for (int i = 1; i <= n; ++i) {
-        string nombreTxt = to_string(i) + ".txt";
-        string nombreHash = to_string(i) + ".sha";
+        stringstream ss;
+        ss << i;
+        string nombreTxt = ss.str() + ".txt";
+        string nombreHash = ss.str() + ".sha";
         if (remove(nombreTxt.c_str()) == 0) {
             cout << "Archivo eliminado: " << nombreTxt << endl;
         } else {
@@ -190,18 +184,18 @@ void eliminarArchivos(int n) {  //solo si es necesario eliminar archivos en prue
 int main()
 {
     int n;
-    cout<< "Ingrese la cantidad de archivos que desea procesar" << endl;
-    cin>>n;
-    if (n<=50 and n>0) {
-    duplicate(n); // Ejemplo: crea 1.txt, 2.txt, 3.txt
-    cout << "--------------------------------------------------------------------" << endl;
-    cout << "PROCESO BASE \n" << endl;
-    manejarArchivo(n);
-    cout << "--------------------------------------------------------------------" << endl;
+    cout << "Ingrese la cantidad de archivos que desea procesar" << endl;
+    cin >> n;
+    if (n <= 50 && n > 0) {
+        duplicate(n);
+        cout << "--------------------------------------------------------------------" << endl;
+        cout << "PROCESO BASE \n" << endl;
+        manejarArchivo(n);
+        cout << "--------------------------------------------------------------------" << endl;
     } else {
-        cout << "El numero de archivos debe ser positivo, distinto de 0 menor o igual a 50" << endl;
+        cout << "El numero de archivos debe ser positivo, distinto de 0 y menor o igual a 50" << endl;
     }
-    //eliminarArchivos(50); //Eliminar todos los archivos
+    eliminarArchivos(n); // Elimina solo los archivos creados
     cout << "Presione ENTER para salir..." << endl;
     cin.ignore();
     cin.get();
