@@ -195,7 +195,7 @@ int main()
     } else {
         cout << "El numero de archivos debe ser positivo, distinto de 0 y menor o igual a 50" << endl;
     }
-    eliminarArchivos(n); // Elimina solo los archivos creados
+    //eliminarArchivos(n); // Elimina solo los archivos creados
     cout << "Presione ENTER para salir..." << endl;
     cin.ignore();
     cin.get();
