@@ -374,12 +374,12 @@ int main()
         cout << "DF:" << diferencia << "ms" << endl;
         long long porcentaje = (diferencia * 100) / tiempoTotalBase;
         cout << "PM:" << porcentaje << "%" << endl;
+        eliminarArchivos(n);
     }
     else
     {
         cout << "El numero de archivos debe ser positivo, distinto de 0 y menor o igual a 50" << endl;
     }
-    eliminarArchivos(n);
     cout << "Presione ENTER para salir..." << endl;
     cin.ignore();
     cin.get();
